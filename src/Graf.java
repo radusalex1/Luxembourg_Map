@@ -8,7 +8,7 @@ public class Graf {
         //imi creez ob MyPanel
         f.add(new MyPanel());
         //setez dimensiunea ferestrei
-        f.setSize(1920,1080 );
+        f.setSize(1270,670);
         //fac fereastra vizibila
         f.setVisible(true);
     }

@@ -2,13 +2,13 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
 
 import javax.swing.*;
 import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -26,14 +26,14 @@ public class MyPanel extends JPanel {
     private int longitudinemax=5018275;
     private  int longitudinemin=4945029;
     private int latitudinemin = 573929;
+
     private static final String FILENAME = "hartaLuxembourg.xml";
-    //ArrayList<ArrayList<Nod> > aList = new ArrayList<ArrayList<Nod> >(n);
+
     public MyPanel()
     {
         listaNoduri=new Vector<Nod>();
         listaArce = new Vector<Arc>();
         readData();
-        TransformCoordonates();
         repaint();
         addMouseListener(new MouseAdapter() {
             @Override
@@ -70,86 +70,70 @@ public class MyPanel extends JPanel {
     }
 
     public void readData()
-    {
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-        try
-        {
-            dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-            DocumentBuilder db = dbf.newDocumentBuilder();
-            Document doc = db.parse(new File(FILENAME));
-            doc.getDocumentElement().normalize();
+   {
+       try
+       {
+           SAXParserFactory factory = SAXParserFactory.newInstance();
+           SAXParser saxParser = factory.newSAXParser();
+           DefaultHandler handler = new DefaultHandler()
+           {
 
-            NodeList list = doc.getElementsByTagName("node");
-            for(int temp=0;temp<list.getLength();temp++)
-            {
-                Node node = list.item(temp);
-                if(node.getNodeType() == Node.ELEMENT_NODE)
-                {
-                    Element element = (Element) node;
-                    String id = element.getAttribute("id");
-                    String longitudine = element.getAttribute("longitude");
-                    String latitudine = element.getAttribute("latitude");
+               Integer id,latitude,longitude,arcFrom,arcTo,arcLenght;
+               int minLat=573929;
+               int maxLat =652685;
 
-                   /* if(Integer.parseInt(longitudine)>longitudinemax)
-                    {
-                        longitudinemax = Integer.parseInt(longitudine);
-                    }
-                    if(Integer.parseInt(latitudine)>latitudinemax)
-                    {
-                        latitudinemax=Integer.parseInt(latitudine);
-                    }*/
+               int minLong=4945029;
+               int maxLong =5018275;
 
-                    Nod nod = new Nod(Integer.parseInt(id),Double.parseDouble(longitudine),Double.parseDouble(latitudine));
+               //parser starts parsing a specific element inside the document
+               public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException
+               {
+                   // System.out.println("Start Element :" + qName);
+                   if(qName.equalsIgnoreCase("node"))
+                   {
+                       id =Integer.parseInt(attributes.getValue("id"));
+                       latitude=Integer.parseInt(attributes.getValue("latitude"));
+                       longitude=Integer.parseInt(attributes.getValue("longitude"));
+                       if(latitude<minLat)
+                           minLat=latitude;
+                       if(latitude>maxLat)
+                           maxLat=latitude;
+                       if(longitude<minLong)
+                           minLong=longitude;
+                       if(longitude>maxLong)
+                           maxLong=longitude;
+                       Nod nod = new Nod(id,longitude,latitude);
+                       listaNoduri.add(nod);
+                   }
 
-                    System.out.print(nod);
-                    System.out.println();
-                    listaNoduri.add(nod);
-                }
-            }
+                   if(qName.equalsIgnoreCase("arc"))
+                   {
+                       arcFrom =Integer.parseInt(attributes.getValue("from"));
+                       arcTo=Integer.parseInt(attributes.getValue("to"));
+                       arcLenght=Integer.parseInt(attributes.getValue("length"));
 
-            NodeList list1 = doc.getElementsByTagName("arc");
-            for(int temp=0;temp<list1.getLength();temp++)
-            {
-                Node node1 = list1.item(temp);
-                if(node1.getNodeType()==Node.ELEMENT_NODE)
-                {
-                    Element element = (Element) node1;
-                    String from = element.getAttribute("from");
-                    String to = element.getAttribute("to");
-                    String length = element.getAttribute("length");
-                    Arc arc = new Arc(Integer.parseInt(from),Integer.parseInt(to),Integer.parseInt(length));
-                    System.out.print(arc);
-                    System.out.println();
-                    for(Nod n : listaNoduri)
-                    {
-                        if(arc.getSourceId()==n.getId())
-                        {
-                            arc.setStartNode(n);
-                        }
-                        if(arc.getDestinationId() == n.getId())
-                        {
-                            arc.setEndNode(n);
-                        }
-                    }
-                    listaArce.add(arc);
-                }
-            }
+                       Arc arc = new Arc(arcFrom,arcTo,arcLenght);
 
-        }catch (ParserConfigurationException | SAXException | IOException e) {
-            e.printStackTrace();
-        }
+                       double x=(1270)*(listaNoduri.get(arcFrom).getLongitudine()-longitudinemin)/(longitudinemax-longitudinemin);
+                       double y=(670)*(latitudinemax-listaNoduri.get(arcFrom).getLatitudine())/(latitudinemax-latitudinemin);
+
+                       double x1 = (1270)*(listaNoduri.get(arcTo).getLongitudine()-longitudinemin)/(longitudinemax-longitudinemin);
+                       double y1 = (670)*(latitudinemax-listaNoduri.get(arcTo).getLatitudine())/(latitudinemax-latitudinemin);
+
+                       arc.setStart(new Point((int)x,(int)y));
+                       arc.setEnd(new Point((int)x1,(int)y1));
+                       arc.setStartNode(listaNoduri.elementAt(arcFrom));
+                       arc.setEndNode(listaNoduri.elementAt(arcTo));
+                       listaArce.add(arc);
+                   }
+               }
+               //parser ends parsing the specific element inside the document
+           };
+           saxParser.parse("hartaLuxembourg.xml", handler);
+       }
+       catch (Exception e)
+       {
+           e.printStackTrace();
+       }
     }
-
-    public void TransformCoordonates()
-    {
-        for(Nod n:listaNoduri)
-        {
-            double x=(1920-50) *(n.getLongitudine()-longitudinemin)/(longitudinemax-longitudinemin);
-            double y=(1080-50)*(latitudinemax-n.getLatitudine())/(latitudinemax-latitudinemin);
-            n.setCoordX(x);
-            n.setCoordY(y);
-        }
-
-    }
-
 }

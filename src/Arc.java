@@ -8,8 +8,24 @@ public class Arc {
     private Nod startNode;
     private Nod endNode;
 
-    private boolean selected=false;
+    private Point start;
+    private Point end;
 
+    public void setStart(Point start) {
+        this.start = start;
+    }
+
+    public void setEnd(Point end) {
+        this.end = end;
+    }
+    public Point getStart() {
+        return start;
+    }
+    public Point getEnd() {
+        return end;
+    }
+
+    private boolean selected=false;
     public Nod getStartNode() {
         return startNode;
     }
@@ -49,7 +65,7 @@ public class Arc {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_ON);
 
-        if(startNode!=null)
+        if(start!=null)
         {
             if(selected)
             {
@@ -59,7 +75,7 @@ public class Arc {
             {
                 g.setColor(Color.black);
             }
-            Shape l = new Line2D.Double(startNode.getMiddleX(),startNode.getMiddleY(),endNode.getMiddleX(),endNode.getMiddleY());
+            Shape l = new Line2D.Double(start.x,start.y,end.x,end.y);
             g2.draw(l);
         }
     }
