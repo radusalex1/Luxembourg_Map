@@ -11,6 +11,8 @@ public class Arc {
     private Point start;
     private Point end;
 
+    private boolean selected=false;
+
     public void setStart(Point start) {
         this.start = start;
     }
@@ -25,7 +27,8 @@ public class Arc {
         return end;
     }
 
-    private boolean selected=false;
+
+
     public Nod getStartNode() {
         return startNode;
     }

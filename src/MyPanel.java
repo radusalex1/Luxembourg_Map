@@ -1,40 +1,113 @@
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
-
 import javax.swing.*;
-import javax.xml.XMLConstants;
 import javax.xml.parsers.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
+import java.util.*;
 
 public class MyPanel extends JPanel {
     private final Vector<Nod> listaNoduri;
-    private final Vector<Arc> listaArce;
+    private Vector<Arc> listaArce;
     private Point sourcePoint=null;
     private Point destinationPoint=null;
-    private int latitudinemax=652685;
-    private int longitudinemax=5018275;
-    private  int longitudinemin=4945029;
-    private int latitudinemin = 573929;
+    private final int latitudinemax=652685;
+    private final int longitudinemax=5018275;
+    private final int longitudinemin=4945029;
+    private final int latitudinemin = 573929;
 
+    List<List<Arc>> adjList = null;
+
+    private Pair pair = new Pair(new Nod(-1,-1,-1),new Nod(-1,-1,-1));
     private static final String FILENAME = "hartaLuxembourg.xml";
+
+static class Pair{
+    private Nod source;
+    private Nod destination;
+    public Pair(Nod source, Nod destination) {
+        this.source = source;
+        this.destination = destination;
+    }
+    public Nod getSource() {
+        return source;
+    }
+    public Nod getDestination() {
+        return destination;
+    }
+}
+
+double getDistance(double x1,double y1,double x2,double y2)
+{
+    return Math.sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
+}
+
+private void GetClosestNodes(Point sourcePoint,Point destinationPoint)
+{
+    double minSource=Integer.MAX_VALUE;
+    Nod source=null;
+    Nod dest=null;
+    double minDestination=Integer.MAX_VALUE;
+    for(Nod n:listaNoduri)
+    {
+        double d1 = getDistance(n.getCoordX(),n.getCoordY(),sourcePoint.x,sourcePoint.y);
+        if(d1<minSource)
+        {
+            source=n;
+            minSource = d1;
+        }
+
+        double d2 = getDistance(n.getCoordX(),n.getCoordY(),destinationPoint.x,destinationPoint.y);
+        if(d2<minDestination)
+        {
+            dest=n;
+            minDestination = d2;
+        }
+    }
+
+    pair.destination = dest;
+    pair.source = source;
+
+    System.out.print(sourcePoint+" "+source.getCoordX()+" "+source.getCoordY());
+    System.out.println();
+    System.out.print(destinationPoint+" "+dest.getCoordX()+" "+dest.getCoordY());
+    System.out.println();
+
+}
+    public void createAdjList()
+    {
+        for(Arc arc:listaArce)
+        {
+            adjList.get(arc.getSourceId()).add(arc);
+        }
+    }
+    public void initializeAdjList()
+    {
+        adjList= new ArrayList<>();
+
+        for(int i=0;i<listaNoduri.size();i++)
+        {
+            adjList.add(new ArrayList<>());
+        }
+    }
 
     public MyPanel()
     {
         listaNoduri=new Vector<Nod>();
         listaArce = new Vector<Arc>();
+
         readData();
+
+        initializeAdjList();
+
+        createAdjList();
+
         repaint();
+
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -42,24 +115,47 @@ public class MyPanel extends JPanel {
                 if(sourcePoint==null)
                 {
                     sourcePoint=e.getPoint();
-                    System.out.print(sourcePoint+":"+sourcePoint.x+" "+sourcePoint.y);
-                    System.out.println();
+                   /*system.out.print(sourcePoint+":"+sourcePoint.x+" "+sourcePoint.y);
+                    System.out.println();*/
                 }
-                if(sourcePoint!=null)
-                {
-                    destinationPoint=e.getPoint();
-                    System.out.print(destinationPoint+":"+destinationPoint.x + " " + destinationPoint.y);
-                    System.out.println();
-                }
-                if(sourcePoint!=null && destinationPoint!=null)
-                {
-                    sourcePoint=e.getPoint();
-                    destinationPoint=null;
+                else {
+                    if (sourcePoint != null && destinationPoint==null) {
+                        destinationPoint = e.getPoint();
+
+                        GetClosestNodes(sourcePoint, destinationPoint);
+                        Dijkstra djk = new Dijkstra(adjList,pair.source.getId(),pair.destination.getId(),listaNoduri.size());
+                        djk.findShortestPath();
+                        List<Integer> route = djk.getRoute();
+                        colorPath(route);
+                        repaint();
+                        //apelez dijsktra
+
+                        /* System.out.print(destinationPoint+":"+destinationPoint.x + " " + destinationPoint.y);
+                        System.out.println();*/
+                    } else {
+                        if (sourcePoint != null && destinationPoint != null) {
+                            sourcePoint = e.getPoint();
+                            destinationPoint = null;
+                        }
+                    }
                 }
             }
         });
     }
+    public void colorPath(List<Integer> route)
+    {
+        for(int i=0;i<route.size()-1;i++)
+        {
+            for(Arc arc:listaArce)
+            {
+                if(arc.getDestinationId()==route.get(i) && arc.getSourceId()==route.get(i+1))
+                {
+                    arc.setSelected(true);
+                }
+            }
+        }
 
+    }
     protected void paintComponent(Graphics g)
     {
         super.paintComponent(g);
@@ -124,6 +220,12 @@ public class MyPanel extends JPanel {
                        arc.setEnd(new Point((int)x1,(int)y1));
                        arc.setStartNode(listaNoduri.elementAt(arcFrom));
                        arc.setEndNode(listaNoduri.elementAt(arcTo));
+
+                       listaNoduri.elementAt(arcFrom).setCoordX(x);
+                       listaNoduri.elementAt(arcFrom).setCoordY(y);
+                       listaNoduri.elementAt(arcTo).setCoordX(x1);
+                       listaNoduri.elementAt(arcTo).setCoordY(y1);
+
                        listaArce.add(arc);
                    }
                }
