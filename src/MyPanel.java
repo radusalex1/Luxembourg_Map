@@ -20,7 +20,7 @@ public class MyPanel extends JPanel {
     private final int longitudinemax=5018275;
     private final int longitudinemin=4945029;
     private final int latitudinemin = 573929;
-
+    private List<Integer> route;
     List<List<Arc>> adjList = null;
 
     private Pair pair = new Pair(new Nod(-1,-1,-1),new Nod(-1,-1,-1));
@@ -125,7 +125,7 @@ private void GetClosestNodes(Point sourcePoint,Point destinationPoint)
                         GetClosestNodes(sourcePoint, destinationPoint);
                         Dijkstra djk = new Dijkstra(adjList,pair.source.getId(),pair.destination.getId(),listaNoduri.size());
                         djk.findShortestPath();
-                        List<Integer> route = djk.getRoute();
+                        route = djk.getRoute();
                         colorPath(route);
                         repaint();
                         //apelez dijsktra
@@ -154,13 +154,13 @@ private void GetClosestNodes(Point sourcePoint,Point destinationPoint)
                 }
             }
         }
-
     }
     protected void paintComponent(Graphics g)
     {
         super.paintComponent(g);
         for(Arc arc:listaArce)
         {
+
             arc.drawArc(g);
         }
     }
@@ -173,11 +173,10 @@ private void GetClosestNodes(Point sourcePoint,Point destinationPoint)
            SAXParser saxParser = factory.newSAXParser();
            DefaultHandler handler = new DefaultHandler()
            {
-
                Integer id,latitude,longitude,arcFrom,arcTo,arcLenght;
+
                int minLat=573929;
                int maxLat =652685;
-
                int minLong=4945029;
                int maxLong =5018275;
 
@@ -190,6 +189,7 @@ private void GetClosestNodes(Point sourcePoint,Point destinationPoint)
                        id =Integer.parseInt(attributes.getValue("id"));
                        latitude=Integer.parseInt(attributes.getValue("latitude"));
                        longitude=Integer.parseInt(attributes.getValue("longitude"));
+
                        if(latitude<minLat)
                            minLat=latitude;
                        if(latitude>maxLat)

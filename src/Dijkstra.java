@@ -122,20 +122,9 @@ class Dijkstra{
             done[u]=true;
         }
 
-
         getRoute(prev,destinationId,route);
 
         System.out.print(route);
-       /* for (int i = 0; i < nodes; i++)
-        {
-            if (i != sourceId && dist.get(i) != Integer.MAX_VALUE)
-            {
-                getRoute(prev, destinationId, route);
-                System.out.printf("Path (%d —> %d): Minimum cost = %d, Route = %s\n",
-                        sourceId, i, dist.get(i), route);
-                route.clear();
-            }
-        }*/
     }
 
     public static List<Integer> getRoute() {
